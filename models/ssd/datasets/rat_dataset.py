@@ -31,7 +31,6 @@ class RATDataset(Dataset):
         image_path = self.images[index]
 
         xml_path = self.xmls[index]
-        print('image_path:', image_path,'||xml_path:',xml_path)
         boxes, labels = self._get_annotation(xml_path)
         image = self._read_image(image_path)
         if self.transform:

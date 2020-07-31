@@ -68,11 +68,11 @@ parser.add_argument('--t_max', default=120, type=float,
                     help='T_max value for Cosine Annealing Scheduler.')
 
 # Train params
-parser.add_argument('--batch_size', default=8, type=int,
+parser.add_argument('--batch_size', default=32, type=int,
                     help='Batch size for training')
 parser.add_argument('--num_epochs', default=120, type=int,
                     help='the number epochs')
-parser.add_argument('--num_workers', default=1, type=int,
+parser.add_argument('--num_workers', default=6, type=int,
                     help='Number of workers used in dataloading')
 parser.add_argument('--validation_epochs', default=5, type=int,
                     help='the number epochs')
@@ -100,7 +100,6 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
     running_regression_loss = 0.0
     running_classification_loss = 0.0
     for i, data in enumerate(loader):
-        print(f"i:{i}")
         images, boxes, labels = data
         images = images.to(device)
         boxes = boxes.to(device)

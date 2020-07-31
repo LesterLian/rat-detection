@@ -3,6 +3,7 @@ import os.path as osp
 import sys
 import config
 import numpy as np
+import xml.etree.ElementTree as ET
 
 
 def main(root):
@@ -10,9 +11,22 @@ def main(root):
         print("dataset path is wrong.")
         sys.exit(1)
 
-    images = glob.glob(f"{root}/*/*.jpg")
-
-    xmls = [image[:-3] + 'xml' for image in images]
+    xmls = glob.glob(f"{root}/*/*.xml")
+    tmp_xmls = []
+    for xml_path in xmls:
+        objects = ET.parse(xml_path).findall("object")
+        boxes = []
+        for object in objects:
+            bbox = object.find('bndbox')
+            x1 = float(bbox.find('xmin').text) - 1
+            y1 = float(bbox.find('ymin').text) - 1
+            x2 = float(bbox.find('xmax').text) - 1
+            y2 = float(bbox.find('ymax').text) - 1
+            boxes.append([x1, y1, x2, y2])
+        if len(boxes) != 0:
+            tmp_xmls.append(xml_path)
+    xmls = tmp_xmls
+    images = [xml[:-3] + 'jpg' for xml in xmls]
     images = np.array(images)
     xmls = np.array(xmls)
     total_size = len(images)
@@ -50,7 +64,5 @@ def main(root):
     print('generate_data_path finished!')
 
 
-# 12284.09
-# 673.10
 if __name__ == '__main__':
     main(config.DATASET_ROOT_PATH)
