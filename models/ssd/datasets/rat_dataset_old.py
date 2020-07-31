@@ -10,27 +10,27 @@ from torch.utils.data import Dataset
 class RATDataset(Dataset):
     def __init__(self,
                  root,
-                 images_path,
-                 xmls_path,
-
+                 trainval_path,
+                 test_path,
                  transform=None,
                  target_transform=None,
                  is_test=False):
         self.root = root
         self.transform = transform
         self.target_transform = target_transform
-
-        self.images = RATDataset._read_images_path(images_path)
-        self.xmls = RATDataset._read_xmls_path(xmls_path)
+        if is_test:
+            images_sets_file = test_path
+        else:
+            images_sets_file = trainval_path
+        self.ids = RATDataset._read_image_ids(images_sets_file)
         self.class_names = ('BACKGROUND', 'rat')
 
         self.class_dict = {class_name: i for i, class_name in enumerate(self.class_names)}
 
     def __getitem__(self, index):
-        image_path = self.images[index]
-        xml_path = self.xmls[index]
-        boxes, labels = self._get_annotation(xml_path)
-        image = self._read_image(image_path)
+        image_id = self.ids[index]
+        boxes, labels = self._get_annotation(image_id)
+        image = self._read_image(image_id)
         if self.transform:
             image, boxes, labels = self.transform(image, boxes, labels)
         if self.target_transform:
@@ -51,8 +51,16 @@ class RATDataset(Dataset):
         image_id = self.ids[index]
         return image_id, self._get_annotation(image_id)
 
-    def _get_annotation(self, xml_path):
-        objects = ET.parse(xml_path).findall("object")
+    def _get_annotation(self, image_id):
+        # annotation_file = self.root / f"Annotations/
+        try:
+            annotation_file = os.path.join(self.root, f"CHTXrat{image_id}.xml") # TODO CHECK THIS
+            objects = ET.parse(annotation_file).findall("object")
+        except:
+            annotation_file = os.path.join(self.root, f"CHTXrat{image_id}.xml")
+            objects = ET.parse(annotation_file).findall("object")
+            print("load annotation error")
+
         boxes = []
         labels = []
         for object in objects:
@@ -71,23 +79,22 @@ class RATDataset(Dataset):
         return (np.array(boxes, dtype=np.float32),
                 np.array(labels, dtype=np.int64))
 
-    def _read_image(self, image_path):
-        image = cv2.imread(str(image_path))
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    def _read_image(self, image_id):
+        try:
+            image_file = "./data/VOCdevkit/VOC2007/" + f"JPEGImages/{image_id}.jpg"
+            image = cv2.imread(str(image_file))
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        except:
+            image_file = "./data/VOCdevkit/test/VOC2007/" + f"JPEGImages/{image_id}.jpg"
+            image = cv2.imread(str(image_file))
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            print("read image error")
         return image
 
     @staticmethod
-    def _read_images_path(images_path):
-        images = []
-        with open(images_path) as f:
+    def _read_image_ids(image_sets_file):
+        ids = []
+        with open(image_sets_file) as f:
             for line in f:
-                images.append(line.rstrip())
-        return images[:-1]
-
-    @staticmethod
-    def _read_xmls_path(xmls_path):
-        xmls = []
-        with open(xmls_path) as f:
-            for line in f:
-                xmls.append(line.rstrip())
-        return xmls[:-1]
+                ids.append(line.rstrip())
+        return ids
