@@ -9,26 +9,29 @@ from torch.utils.data import Dataset
 
 class RATDataset(Dataset):
     def __init__(self,
-                 root,
                  images_path,
                  xmls_path,
-
                  transform=None,
                  target_transform=None,
                  is_test=False):
-        self.root = root
         self.transform = transform
         self.target_transform = target_transform
 
         self.images = RATDataset._read_images_path(images_path)
         self.xmls = RATDataset._read_xmls_path(xmls_path)
+        assert len(self.images) == len(self.xmls)
         self.class_names = ('BACKGROUND', 'rat')
 
         self.class_dict = {class_name: i for i, class_name in enumerate(self.class_names)}
+        self.num = 0
 
     def __getitem__(self, index):
+        self.num += 1
+
         image_path = self.images[index]
+
         xml_path = self.xmls[index]
+        print('image_path:', image_path,'||xml_path:',xml_path)
         boxes, labels = self._get_annotation(xml_path)
         image = self._read_image(image_path)
         if self.transform:
@@ -38,18 +41,18 @@ class RATDataset(Dataset):
         return image, boxes, labels
 
     def __len__(self):
-        return len(self.ids)
+        return len(self.images)
 
     def get_image(self, index):
-        image_id = self.ids[index]
-        image = self._read_image(image_id)
+        image_path = self.images[index]
+        image = self._read_image(image_path)
         if self.transform:
             image, _ = self.transform(image)
         return image
 
     def get_annotation(self, index):
-        image_id = self.ids[index]
-        return image_id, self._get_annotation(image_id)
+        image_path = self.images[index]
+        return image_path, self._get_annotation(image_path)
 
     def _get_annotation(self, xml_path):
         objects = ET.parse(xml_path).findall("object")
@@ -82,7 +85,7 @@ class RATDataset(Dataset):
         with open(images_path) as f:
             for line in f:
                 images.append(line.rstrip())
-        return images[:-1]
+        return images
 
     @staticmethod
     def _read_xmls_path(xmls_path):
@@ -90,4 +93,4 @@ class RATDataset(Dataset):
         with open(xmls_path) as f:
             for line in f:
                 xmls.append(line.rstrip())
-        return xmls[:-1]
+        return xmls

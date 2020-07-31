@@ -10,6 +10,7 @@ from numpy import random
 
 
 def intersect(box_a, box_b):
+    # print('box_a',box_a,'||box_b',box_b)
     max_xy = np.minimum(box_a[:, 2:], box_b[2:])
     min_xy = np.maximum(box_a[:, :2], box_b[:2])
     inter = np.clip((max_xy - min_xy), a_min=0, a_max=np.inf)

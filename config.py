@@ -1,2 +1,5 @@
 DATASET_ROOT_PATH = "/home/akio/PycharmProjects/rat-detect/data"
-
+TRAIN_IMAGES_PATH="/home/akio/PycharmProjects/rat-detect/data/train_images.txt"
+TRAIN_XMLS_PATH = "/home/akio/PycharmProjects/rat-detect/data/train_xmls.txt"
+VAL_IMAGES_PATH = "/home/akio/PycharmProjects/rat-detect/data/val_images.txt"
+VAL_XMLS_PATH = "/home/akio/PycharmProjects/rat-detect/data/val_xmls.txt"

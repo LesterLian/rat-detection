@@ -17,13 +17,17 @@ from models.nn.multibox_loss import MultiboxLoss
 from models.ssd.config import mobilenetv1_ssd_config
 from models.ssd.data_preprocessing import TrainAugmentation, TestTransform
 
+import config
+
 parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Training With Pytorch')
 
-parser.add_argument('--datasets', nargs='+', help='Dataset directory path')
-parser.add_argument('--validation_dataset', help='Dataset directory path')
+parser.add_argument('--train_images_path', default=config.TRAIN_IMAGES_PATH, help='train_images_path')
+parser.add_argument('--train_xmls_path', default=config.TRAIN_XMLS_PATH, help='train_xmls_path')
+parser.add_argument('--val_images_path', default=config.VAL_IMAGES_PATH, help='val_images_path')
+parser.add_argument('--val_xmls_path', default=config.VAL_XMLS_PATH, help='val_xmls_path')
 
-parser.add_argument('--net', default='mb1-ssd',
+parser.add_argument('--net', default='mb1-ssd-lite',
                     help='The network architecture')
 parser.add_argument('--freeze_base_net', action='store_true',
                     help='Freeze base net layers.')
@@ -64,11 +68,11 @@ parser.add_argument('--t_max', default=120, type=float,
                     help='T_max value for Cosine Annealing Scheduler.')
 
 # Train params
-parser.add_argument('--batch_size', default=32, type=int,
+parser.add_argument('--batch_size', default=8, type=int,
                     help='Batch size for training')
 parser.add_argument('--num_epochs', default=120, type=int,
                     help='the number epochs')
-parser.add_argument('--num_workers', default=4, type=int,
+parser.add_argument('--num_workers', default=1, type=int,
                     help='Number of workers used in dataloading')
 parser.add_argument('--validation_epochs', default=5, type=int,
                     help='the number epochs')
@@ -96,6 +100,7 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
     running_regression_loss = 0.0
     running_classification_loss = 0.0
     for i, data in enumerate(loader):
+        print(f"i:{i}")
         images, boxes, labels = data
         images = images.to(device)
         boxes = boxes.to(device)
@@ -168,20 +173,23 @@ if __name__ == '__main__':
     test_transform = TestTransform(config.image_size, config.image_mean, config.image_std)
 
     logging.info("Prepare training datasets.")
-    datasets = []
+    # datasets = []
 
-    for dataset_path in args.datasets:
-        dataset = RATDataset(dataset_path, transform=train_transform, target_transform=target_transform)
-        num_classes = len(dataset.class_names)
-        datasets.append(dataset)
-    train_datasets = ConcatDataset(datasets)
+    # for dataset_path in args.datasets:
+    #     dataset = RATDataset(dataset_path, transform=train_transform, target_transform=target_transform)
+    #     num_classes = len(dataset.class_names)
+    #     datasets.append(dataset)
+    # train_datasets = ConcatDataset(datasets)
+    train_datasets = RATDataset(args.train_images_path, args.train_xmls_path, transform=train_transform,
+                                target_transform=target_transform)
+    num_classes = len(train_datasets.class_names)
     logging.info(f"Train dataset size :{len(train_datasets)}")
     logging.info(train_datasets)
     train_loader = DataLoader(train_datasets, args.batch_size,
-                                  num_workers=args.num_workers, shuffle=True)
+                              num_workers=args.num_workers, shuffle=True)
 
     logging.info("Prepare Validation datasets.")
-    val_dataset = RATDataset(args.validation_dataset, transform=test_transform,
+    val_dataset = RATDataset(args.val_images_path, args.val_xmls_path, transform=test_transform,
                              target_transform=target_transform, is_test=True)
     logging.info(val_dataset)
     val_loader = DataLoader(val_dataset, args.batch_size,
@@ -279,4 +287,3 @@ if __name__ == '__main__':
             model_path = os.path.join(args.checkpoint_folder, f"{args.net}-Epoch-{epoch}-Loss-{val_loss}.pth")
             net.save(model_path)
             logging.info(f"Saved model {model_path}")
-

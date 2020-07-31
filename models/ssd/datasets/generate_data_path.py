@@ -11,17 +11,10 @@ def main(root):
         sys.exit(1)
 
     images = glob.glob(f"{root}/*/*.jpg")
-    xmls = glob.glob(f"{root}/*/*.xml")
 
-    def map_f(x):
-        return root + x[1:]
-
-    map(map_f, images)
-    map(map_f, xmls)
-
+    xmls = [image[:-3] + 'xml' for image in images]
     images = np.array(images)
     xmls = np.array(xmls)
-    assert len(images) == len(xmls)
     total_size = len(images)
 
     train_size = int(0.7 * total_size)
